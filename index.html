@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级座位表</title>
+    <style>
+        :root {
+            --primary-color: #FFB6C1;
+            --secondary-color: #87CEEB;
+            --accent-color: #DDA0DD;
+            --text-color: #333;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --card-width: 82.5px;
+            --card-height: 82.5px;
+            --border-radius: 8px;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+            font-family: "Microsoft YaHei", "YouYuan", sans-serif;
+            color: var(--text-color);
+        }
+
+        h1 {
+            font-family: "Comic Sans MS", "华文彩云", cursive;
+            font-size: 2.5em;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px var(--shadow-color);
+            color: #fff;
+        }
+
+        .classroom {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px var(--shadow-color);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .group {
+            display: flex;
+            gap: 5px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            backdrop-filter: blur(5px);
+        }
+
+        .group + .group {
+            margin-left: 15px;
+        }
+        .seat {
+            width: var(--card-width);
+            height: var(--card-height);
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: move;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .seat p {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+
+        .position {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .seat:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px var(--shadow-color);
+        }
+
+        .seat.dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+        }
+
+        .seat p {
+            margin: 5px 0;
+        }
+
+        .position {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .name {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        @media (max-width: 768px) {
+            .classroom {
+                transform: scale(0.8);
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+        }
+
+        .firework {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: explode 0.8s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(20);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>班级座位表</h1>
+    <div class="classroom" id="classroom"></div>
+    <div class="buttons">
+        <button onclick="clearSeats()">清空座位</button>
+        <button onclick="randomAssign()">随机分配</button>
+        <button onclick="sequentialAssign()">顺序分配</button>
+        <button onclick="saveAsImage()">保存截图</button>
+        <button onclick="saveToLocalStorage()">保存布局</button>
+    </div>
+
+    <script>
+        const names = Array.from({length: 48}, (_, i) => `李${i + 1}`);
+
+        function createSeat(row, col, name = '') {
+            const seat = document.createElement('div');
+            seat.className = 'seat';
+            seat.draggable = true;
+            seat.innerHTML = `
+                <p class="position">第${row}排${col}座</p>
+                <p class="name">${name}</p>
+            `;
+            seat.dataset.row = row;
+            seat.dataset.col = col;
+            seat.dataset.name = name;
+
+            seat.addEventListener('dragstart', handleDragStart);
+            seat.addEventListener('dragend', handleDragEnd);
+            seat.addEventListener('dragover', handleDragOver);
+            seat.addEventListener('drop', handleDrop);
+
+            return seat;
+        }
+
+        function createFirework(x, y) {
+            const colors = ['#FFB6C1', '#87CEEB', '#DDA0DD'];
+            const firework = document.createElement('div');
+            firework.className = 'firework';
+            firework.style.left = x + 'px';
+            firework.style.top = y + 'px';
+            firework.style.background = colors[Math.floor(Math.random() * colors.length)];
+            document.body.appendChild(firework);
+            setTimeout(() => firework.remove(), 800);
+        }
+
+        function initClassroom() {
+            const classroom = document.getElementById('classroom');
+            classroom.innerHTML = '';
+
+            for (let row = 1; row <= 6; row++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+
+                // 左边两个座位
+                const leftGroup = document.createElement('div');
+                leftGroup.className = 'group';
+                leftGroup.appendChild(createSeat(row, 1));
+                leftGroup.appendChild(createSeat(row, 2));
+
+                // 中间四个座位
+                const middleGroup = document.createElement('div');
+                middleGroup.className = 'group';
+                for (let col = 3; col <= 6; col++) {
+                    middleGroup.appendChild(createSeat(row, col));
+                }
+
+                // 右边两个座位
+                const rightGroup = document.createElement('div');
+                rightGroup.className = 'group';
+                rightGroup.appendChild(createSeat(row, 7));
+                rightGroup.appendChild(createSeat(row, 8));
+
+                rowDiv.appendChild(leftGroup);
+                rowDiv.appendChild(middleGroup);
+                rowDiv.appendChild(rightGroup);
+                classroom.appendChild(rowDiv);
+            }
+        }
+
+        let draggedSeat = null;
+
+        function handleDragStart(e) {
+            draggedSeat = this;
+            this.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (draggedSeat !== this) {
+                const tempName = this.dataset.name;
+                this.querySelector('.name').textContent = draggedSeat.dataset.name;
+                this.dataset.name = draggedSeat.dataset.name;
+                draggedSeat.querySelector('.name').textContent = tempName;
+                draggedSeat.dataset.name = tempName;
+
+                // 创建烟花效果
+                createFirework(e.clientX, e.clientY);
+            }
+        }
+
+        function clearSeats() {
+            const seats = document.querySelectorAll('.seat');
+            seats.forEach(seat => {
+                seat.querySelector('.name').textContent = '';
+                seat.dataset.name = '';
+            });
+        }
+
+        function randomAssign() {
+            const shuffledNames = [...names].sort(() => Math.random() - 0.5);
+            const seats = document.querySelectorAll('.seat');
+            seats.forEach((seat, index) => {
+                if (index < shuffledNames.length) {
+                    seat.querySelector('.name').textContent = shuffledNames[index];
+                    seat.dataset.name = shuffledNames[index];
+                    // 创建随机位置的烟花效果
+                    const rect = seat.getBoundingClientRect();
+                    createFirework(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                }
+            });
+        }
+
+        function sequentialAssign() {
+            const seats = document.querySelectorAll('.seat');
+            seats.forEach((seat, index) => {
+                if (index < names.length) {
+                    setTimeout(() => {
+                        seat.querySelector('.name').textContent = names[index];
+                        seat.dataset.name = names[index];
+                        // 创建随机位置的烟花效果
+                        const rect = seat.getBoundingClientRect();
+                        createFirework(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                    }, index * 100);
+                }
+            });
+        }
+
+        function saveAsImage() {
+            const buttons = document.querySelector('.buttons');
+            buttons.style.display = 'none';
+            html2canvas(document.body).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '班级座位表.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                buttons.style.display = 'flex';
+            });
+        }
+
+        function saveToLocalStorage() {
+            const seats = document.querySelectorAll('.seat');
+            const seatingData = Array.from(seats).map(seat => ({
+                row: seat.dataset.row,
+                col: seat.dataset.col,
+                name: seat.dataset.name
+            }));
+            localStorage.setItem('classSeating', JSON.stringify(seatingData));
+            // 创建保存成功的烟花效果
+            createFirework(window.innerWidth / 2, window.innerHeight / 2);
+        }
+
+        // 在页面加载时恢复座位数据
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('classSeating');
+            if (savedData) {
+                const seatingData = JSON.parse(savedData);
+                const seats = document.querySelectorAll('.seat');
+                seats.forEach((seat, index) => {
+                    if (seatingData[index]) {
+                        seat.querySelector('.name').textContent = seatingData[index].name;
+                        seat.dataset.name = seatingData[index].name;
+                    }
+                });
+            }
+        }
+
+        // 初始化教室
+        initClassroom();
+        loadFromLocalStorage();
+
+        // 加载html2canvas库
+        const script = document.createElement('script');
+        script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
