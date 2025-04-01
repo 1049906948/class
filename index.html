@@ -93,9 +93,16 @@
             box-shadow: 0 8px 16px var(--shadow-color);
         }
 
-        .seat.dragging {
-            opacity: 0.5;
+        .seat.drag-over {
             transform: scale(1.05);
+            box-shadow: 0 8px 16px var(--shadow-color);
+            border: 2px dashed var(--primary-color);
+        }
+
+        .seat.dragging {
+            opacity: 0.8;
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px var(--shadow-color);
         }
 
         .seat p {
@@ -201,6 +208,10 @@
             seat.addEventListener('dragover', handleDragOver);
             seat.addEventListener('drop', handleDrop);
 
+            seat.addEventListener('touchstart', handleTouchStart);
+            seat.addEventListener('touchmove', handleTouchMove);
+            seat.addEventListener('touchend', handleTouchEnd);
+
             return seat;
         }
 
@@ -272,11 +283,97 @@
                 this.dataset.name = draggedSeat.dataset.name;
                 draggedSeat.querySelector('.name').textContent = tempName;
                 draggedSeat.dataset.name = tempName;
-
-                // 创建烟花效果
                 createFirework(e.clientX, e.clientY);
             }
         }
+
+        function handleTouchStart(e) {
+            // 只在实际开始拖拽时阻止默认行为
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            draggedSeat = this;
+            this.classList.add('dragging');
+            
+            document.querySelectorAll('.seat').forEach(seat => {
+                if (seat !== draggedSeat) {
+                    seat.classList.add('droppable');
+                }
+            });
+        }
+
+        function handleTouchMove(e) {
+            // 只在实际拖拽时阻止默认行为
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            const touch = e.touches[0];
+            
+            document.querySelectorAll('.seat').forEach(seat => {
+                seat.classList.remove('drag-over');
+            });
+            
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (target && target.closest('.seat')) {
+                const seat = target.closest('.seat');
+                if (seat !== draggedSeat) {
+                    seat.classList.add('drag-over');
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            // 只在必要时阻止默认行为
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            const touch = e.changedTouches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            // 清除所有临时样式类
+            document.querySelectorAll('.seat').forEach(seat => {
+                seat.classList.remove('drag-over', 'droppable');
+            });
+            
+            if (target) {
+                const targetSeat = target.closest('.seat');
+                if (targetSeat && draggedSeat && targetSeat !== draggedSeat) {
+                    // 交换位置
+                    const tempName = targetSeat.dataset.name;
+                    const tempText = targetSeat.querySelector('.name').textContent;
+                    
+                    targetSeat.dataset.name = draggedSeat.dataset.name;
+                    targetSeat.querySelector('.name').textContent = draggedSeat.querySelector('.name').textContent;
+                    
+                    draggedSeat.dataset.name = tempName;
+                    draggedSeat.querySelector('.name').textContent = tempText;
+                    
+                    // 创建烟花效果
+                    createFirework(touch.clientX, touch.clientY);
+                }
+            }
+            
+            if (draggedSeat) {
+                draggedSeat.classList.remove('dragging');
+                draggedSeat = null;
+            }
+        }
+    
+        // 添加新的样式
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            .seat.droppable {
+                opacity: 0.8;
+                transition: all 0.3s ease;
+            }
+            
+            .seat.drag-over {
+                transform: scale(1.1);
+                border: 2px dashed var(--primary-color);
+                background: rgba(255, 255, 255, 0.9);
+            }
+        `;
+        document.head.appendChild(styleSheet);
 
         function clearSeats() {
             const seats = document.querySelectorAll('.seat');
