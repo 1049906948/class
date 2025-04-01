@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,9 +62,10 @@
             backdrop-filter: blur(5px);
         }
 
-        .group + .group {
+        .group+.group {
             margin-left: 15px;
         }
+
         .seat {
             width: var(--card-width);
             height: var(--card-height);
@@ -170,6 +172,7 @@
                 transform: scale(1);
                 opacity: 1;
             }
+
             100% {
                 transform: scale(20);
                 opacity: 0;
@@ -177,6 +180,7 @@
         }
     </style>
 </head>
+
 <body>
     <h1>班级座位表</h1>
     <div class="classroom" id="classroom"></div>
@@ -189,7 +193,7 @@
     </div>
 
     <script>
-        const names = Array.from({length: 48}, (_, i) => `李${i + 1}`);
+        const names = ["方思雨", "段思维", "张越", "李思可", "吴晶晶", "李雨萱", "陈文想", "雷雨欣", "许阳凡", "张馨睿", "余志鹏", "徐世友", "谢姜紫嫣", "吴子越", "王家琪", "刘钱威", "张好", "肖棋", "屈静美", "王昭洋", "朱方振", "付传美", "刘先明", "周宇萍", "崔梓妮", "翟德军", "倪子涵", "周青", "周丹", "李权", "曹一航", "王豪", "孙王勋", "吴坤洋", "王子恒", "廖梓名", "梅启轩", "徐亚龙", "邹梓萱", "舒心", "王砚千", "汤坤", "郑玄烨", "曹梓轩", "段慧芬", "叶文卓", "沈 伊", "王成城"];
 
         function createSeat(row, col, name = '') {
             const seat = document.createElement('div');
@@ -294,7 +298,7 @@
             }
             draggedSeat = this;
             this.classList.add('dragging');
-            
+
             document.querySelectorAll('.seat').forEach(seat => {
                 if (seat !== draggedSeat) {
                     seat.classList.add('droppable');
@@ -308,11 +312,11 @@
                 e.preventDefault();
             }
             const touch = e.touches[0];
-            
+
             document.querySelectorAll('.seat').forEach(seat => {
                 seat.classList.remove('drag-over');
             });
-            
+
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
             if (target && target.closest('.seat')) {
                 const seat = target.closest('.seat');
@@ -329,36 +333,36 @@
             }
             const touch = e.changedTouches[0];
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
-            
+
             // 清除所有临时样式类
             document.querySelectorAll('.seat').forEach(seat => {
                 seat.classList.remove('drag-over', 'droppable');
             });
-            
+
             if (target) {
                 const targetSeat = target.closest('.seat');
                 if (targetSeat && draggedSeat && targetSeat !== draggedSeat) {
                     // 交换位置
                     const tempName = targetSeat.dataset.name;
                     const tempText = targetSeat.querySelector('.name').textContent;
-                    
+
                     targetSeat.dataset.name = draggedSeat.dataset.name;
                     targetSeat.querySelector('.name').textContent = draggedSeat.querySelector('.name').textContent;
-                    
+
                     draggedSeat.dataset.name = tempName;
                     draggedSeat.querySelector('.name').textContent = tempText;
-                    
+
                     // 创建烟花效果
                     createFirework(touch.clientX, touch.clientY);
                 }
             }
-            
+
             if (draggedSeat) {
                 draggedSeat.classList.remove('dragging');
                 draggedSeat = null;
             }
         }
-    
+
         // 添加新的样式
         const styleSheet = document.createElement('style');
         styleSheet.textContent = `
@@ -461,4 +465,5 @@
         document.head.appendChild(script);
     </script>
 </body>
+
 </html>
