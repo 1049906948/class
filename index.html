@@ -14,7 +14,7 @@
             --text-color: #333;
             --shadow-color: rgba(0, 0, 0, 0.1);
             --card-width: 82.5px;
-            --card-height: 82.5px;
+            --card-height: 60.5px;
             --border-radius: 8px;
         }
 
@@ -32,9 +32,19 @@
         h1 {
             font-family: "Comic Sans MS", "华文彩云", cursive;
             font-size: 2.5em;
-            margin: 20px 0;
             text-shadow: 2px 2px 4px var(--shadow-color);
             color: #fff;
+            /* border: 1px solid #fff; */
+        }
+
+        .student {
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px var(--shadow-color);
+            color: #fff;
+            /* border: 1px solid #fff; */
+            height: 30px;
+            margin-top: 55px;
+            margin-left: 20px;
         }
 
         .classroom {
@@ -183,7 +193,10 @@
 </head>
 
 <body>
-    <h1>班级座位表</h1>
+    <div style="display: flex;">
+        <h1>班级座位表</h1>
+        <div class="student" id="studentCount"></div>
+    </div>
     <div class="classroom" id="classroom"></div>
     <div class="buttons">
         <button onclick="clearSeats()">清空座位</button>
@@ -197,7 +210,27 @@
     </div>
 
     <script>
-        const names = ["方思雨", "段思维", "张越", "李思可", "吴晶晶", "李雨萱", "陈文想", "雷雨欣", "许阳凡", "张馨睿", "余志鹏", "徐世友", "谢姜紫嫣", "吴子越", "王家琪", "刘钱威", "张好", "肖棋", "屈静美", "王昭洋", "朱方振", "付传美", "刘先明", "周宇萍", "崔梓妮", "翟德军", "倪子涵", "周青", "周丹", "李权", "曹一航", "王豪", "孙王勋", "吴坤洋", "王子恒", "廖梓名", "梅启轩", "徐亚龙", "邹梓萱", "舒心", "王砚千", "汤坤", "郑玄烨", "曹梓轩", "段慧芬", "叶文卓", "沈 伊", "王成城"];
+        const names = [];
+
+        function updateStudentCount() {
+            const studentCount = document.getElementById('studentCount');
+            const savedData = localStorage.getItem('classSeating');
+            const seatingData = JSON.parse(savedData);
+            console.log(seatingData,'seatingData');
+            
+            if (seatingData) {
+                const validNames = seatingData
+                    .map(item => item.name)
+                    .filter(name => name !== "");
+                studentCount.textContent = `共 ${validNames.length} 名学生`;
+                console.info(validNames)
+                names.push(...validNames);
+            } else {
+                console.log(names,'names');
+                
+                studentCount.textContent = `共 ${names.length} 名学生`;
+            }
+        }
 
         function createSeat(row, col, name = '') {
             const seat = document.createElement('div');
@@ -238,7 +271,7 @@
             const classroom = document.getElementById('classroom');
             classroom.innerHTML = '';
 
-            for (let row = 1; row <= 6; row++) {
+            for (let row = 1; row <= 8; row++) {
                 const rowDiv = document.createElement('div');
                 rowDiv.className = 'row';
 
@@ -389,6 +422,8 @@
                 seat.querySelector('.name').textContent = '';
                 seat.dataset.name = '';
             });
+            localStorage.clear('classSeating');
+            updateStudentCount();
         }
 
         function randomAssign() {
@@ -464,7 +499,7 @@
             // 过滤掉表头（前两行），然后提取每行的姓名（索引1）
             const names = data
                 .slice(2) // 跳过前两行表头
-                .map(row => row[1]); // 提取每行的第2个元素（姓名）
+                .map(row => row[2]); // 提取每行的第2个元素（姓名）
             return names;
         }
 
@@ -491,11 +526,14 @@
                     if (newNames.length > 0) {
                         // 更新全局names数组
                         names.length = 0;
-                        names.push(...newNames);
+                        const validNames = newNames.filter(name => name !== undefined);
+                        console.log(validNames, 'validNames');
+                        names.push(...validNames);
                         // 自动进行顺序分配
                         sequentialAssign();
                         // 创建成功效果
                         createFirework(window.innerWidth / 2, window.innerHeight / 2);
+                        updateStudentCount();
                     }
                 } catch (error) {
                     alert('文件读取失败，请确保上传的是正确的Excel文件');
@@ -508,6 +546,8 @@
         // 初始化教室
         initClassroom();
         loadFromLocalStorage();
+        updateStudentCount();
+
 
         // 加载html2canvas库
         const script = document.createElement('script');
