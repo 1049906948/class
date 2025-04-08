@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>班级座位表</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary-color: #FFB6C1;
@@ -190,6 +191,9 @@
         <button onclick="sequentialAssign()">顺序分配</button>
         <button onclick="saveAsImage()">保存截图</button>
         <button onclick="saveToLocalStorage()">保存布局</button>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none"
+            onchange="handleFileSelect(event)">
+        <button onclick="document.getElementById('fileInput').click()">导入表格</button>
     </div>
 
     <script>
@@ -453,6 +457,52 @@
                     }
                 });
             }
+        }
+
+        // 获取所有姓名的函数
+        function getNames(data) {
+            // 过滤掉表头（前两行），然后提取每行的姓名（索引1）
+            const names = data
+                .slice(2) // 跳过前两行表头
+                .map(row => row[1]); // 提取每行的第2个元素（姓名）
+            return names;
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // 获取第一个工作表
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+                    // 将工作表转换为数组
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    console.info(JSON.stringify(jsonData), 'jsonData');
+                    const newNames = getNames(jsonData);
+                    console.log(newNames, 'names');
+
+                    if (newNames.length > 0) {
+                        // 更新全局names数组
+                        names.length = 0;
+                        names.push(...newNames);
+                        // 自动进行顺序分配
+                        sequentialAssign();
+                        // 创建成功效果
+                        createFirework(window.innerWidth / 2, window.innerHeight / 2);
+                    }
+                } catch (error) {
+                    alert('文件读取失败，请确保上传的是正确的Excel文件');
+                    console.error('Error reading Excel file:', error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         // 初始化教室
